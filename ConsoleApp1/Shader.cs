@@ -38,7 +38,7 @@ namespace ConsoleApp1
             if (succes == 0)
             {
                 string log = GL.GetShaderInfoLog(shader);
-                Console.WriteLine($"Error compiling {type}  shader ({filePath}):\n");
+                Console.WriteLine($"Error compiling {type}  shader ({filePath}) with bad {log}:\n");
                 throw new Exception($"Shader Computation failed for {filePath}");
             }
             return shader;

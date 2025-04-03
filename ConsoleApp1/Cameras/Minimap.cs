@@ -3,7 +3,6 @@ using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -46,6 +45,10 @@ namespace ConsoleApp1.Cameras
 
                 return view;
             }
+        }
+        public Vector3 GetPosition()
+        {
+            return new Vector3(x, y, z);
         }
 
         public Minimap(ViewPort viewPort) : base(viewPort)

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Numerics;
+
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,22 +14,27 @@ namespace ConsoleApp1
     public class Model : IDisposable
     {
         public Shader Shader { get; set; }
-        public int vao;
-
-        public int vbo;
-        public int vboSize;
-
-        public int ibo;
-        public int iboSize;
-        public bool Changed { get; set; } = true;
+        public Material Material { get; set; }
         public BindingList<Vertex> Vertices { get; set; }
         public BindingList<Triangle> Triangles { get; set; }
-
+        
+        public int vao;
+        public int vbo;
+        public int ibo;
+        
+        public int vboSize;
+        public int iboSize;
+        public bool Changed { get; set; } = true;
+        
         public Vector3 position = new Vector3(0, 0, 0);
+        
+        float startTime;
+        float cutoff = 0.9763f;
 
 
         public Model()
         {
+            startTime = Environment.TickCount;
             GL.GenVertexArrays(1, out vao);
             GL.BindVertexArray(vao);
 
@@ -39,8 +44,7 @@ namespace ConsoleApp1
 
             Triangles = new BindingList<Triangle>();
             ibo = GL.GenBuffer();
-            iboSize = 10;
-
+            iboSize = 500;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(BufferTarget.ArrayBuffer, vboSize * VertexGL.SizeOf(), IntPtr.Zero, BufferUsageHint.DynamicDraw);
@@ -55,16 +59,20 @@ namespace ConsoleApp1
 
             for (var i = 0; i < Vertices.Count; i++)
             {
+                var posX = Vertices[i].Position.X + position.X;
+                var posY = Vertices[i].Position.Y + position.Y;
+                var posZ = Vertices[i].Position.Z + position.Z;
+
                 var pos = Vertices[i].Position;
-                var col = Vertices[i].Color;
+
+                var norm = Vertices[i].normal;
 
                 array[i] = new VertexGL
                 {
                     position = new OpenTK.Mathematics.Vector3((float)pos.X, (float)pos.Y, (float)pos.Z),
-                    color = new OpenTK.Mathematics.Vector3(col.R, col.G, col.B)
+                    normal = new OpenTK.Mathematics.Vector3(norm.X, norm.Y, norm.Z),
                 };
             }
-
             return array;
         }
 
@@ -83,18 +91,41 @@ namespace ConsoleApp1
             }
             return array;
         }
-
-        public void Draw(ICamera camera)
+        public Vector3 TiltVectorDown(Vector3 v, float degrees)
         {
+            float radians = degrees * (MathF.PI / 180f);
+            float cosA = MathF.Cos(radians);
+            float sinA = MathF.Sin(radians);
+
+            float newY = v.Y + MathF.Sin(radians);
+
+            return new Vector3(v.X, newY, v.Z);
+        }
+
+        public void Draw(ICamera camera, Light light)
+        {
+            float elapsed = (Environment.TickCount - startTime) / 1000f;
             Matrix4 translate = Matrix4.CreateTranslation((float)position.X, (float)position.Y, (float)position.Z);
 
+            Vector3 cameraDirection = -camera.GetDirection();
+            cameraDirection.Normalize();
+            cameraDirection = TiltVectorDown(cameraDirection, 2);
+            Vector3 cp = -camera.GetPosition();
+
             Shader.Use();
-            Shader.SetUniform("model", translate);
-            Shader.SetUniform("view", camera.View);
             Shader.SetUniform("projection", camera.Projection);
+            Shader.SetUniform("view", camera.View);
+            Shader.SetUniform("model", translate);
 
+            Shader.SetUniform("lightOn", light.lightOn);
+            Shader.SetUniform("cameraPosWorld", cp);
+            Shader.SetUniform("lightPosWorld", new Vector3(cp.X, 2.05f, cp.Z));
+            Shader.SetUniform("lightDirWorld", cameraDirection);
+            Shader.SetUniform("cutOff", cutoff);
+            Shader.SetUniform("lightColor", light.color);
+            Shader.SetUniform("lightIntensity", light.intensity);
+            Material.SetUniforms(Shader);
 
-            //GL.MultMatrix(ref translate);
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, ibo);
@@ -119,31 +150,18 @@ namespace ConsoleApp1
                 }
                 GL.BufferSubData(BufferTarget.ElementArrayBuffer, 0, triangles.Length * TriangleGL.SizeOf(), triangles);
 
-
                 Changed = false;
-
             }
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-
-            //GL.EnableClientState(ArrayCap.VertexArray);
-            //GL.EnableClientState(ArrayCap.ColorArray);
-            //GL.VertexPointer(3, VertexPointerType.Float, VertexGL.SizeOf(), IntPtr.Zero);
-            //GL.ColorPointer(3, ColorPointerType.Float, VertexGL.SizeOf(), (IntPtr)(3 * sizeof(float)));
-
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, VertexGL.SizeOf(), IntPtr.Zero);
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, VertexGL.SizeOf(), IntPtr.Zero);
+            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, VertexGL.SizeOf(), Vector3.SizeInBytes);
             GL.EnableVertexAttribArray(0);
             GL.EnableVertexAttribArray(1);
 
-
             GL.LineWidth(5);
-            //GL.Enable(EnableCap.CullFace);
             GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
-
-            GL.DrawArrays(PrimitiveType.Points, 0, this.Vertices.Count);
             GL.DrawElements(PrimitiveType.Triangles, 3 * Triangles.Count, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
         }
 
         bool disposed = false;

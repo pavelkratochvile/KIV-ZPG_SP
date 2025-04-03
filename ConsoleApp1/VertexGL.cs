@@ -11,7 +11,7 @@ namespace ConsoleApp1
     public struct VertexGL
     {
         public OpenTK.Mathematics.Vector3 position;
-        public OpenTK.Mathematics.Vector3 color;
+        public OpenTK.Mathematics.Vector3 normal;
 
         public static int SizeOf()
         {

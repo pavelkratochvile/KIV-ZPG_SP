@@ -31,3 +31,14 @@ C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\obj\Debug\net8.0\C
 C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\obj\Debug\net8.0\ref\ConsoleApp1.dll
 C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Shaders\Basic.frag
 C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Shaders\Basic.vert
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\obj\Debug\net8.0\ConsoleApp1.sourcelink.json
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\FreeTypeSharp.dll
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\runtimes\linux-x64\native\libfreetype.so
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\runtimes\osx\native\libfreetype.dylib
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\runtimes\win-arm64\native\freetype.dll
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\runtimes\win-x64\native\freetype.dll
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\runtimes\win-x86\native\freetype.dll
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Objects\sphere.obj
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Objects\untitled.obj
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Maps\map1.txt
+C:\Users\pavel\OneDrive\Dokumenty\ZPG\ZPG_SP\Game\ConsoleApp1\bin\Debug\net8.0\Maps\map2.txt

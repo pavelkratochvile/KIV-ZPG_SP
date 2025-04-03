@@ -13,20 +13,25 @@ using System.Drawing;
 using static System.Net.Mime.MediaTypeNames;
 using System.Diagnostics;
 using ConsoleApp1.Cameras;
+using FreeTypeSharp;
 
 namespace ConsoleApp1
 {
     public class MyGameWindow : GameWindow
     {
-
+        private List<ObjectC> Objects = new List<ObjectC>();
         private List<Block> Walls = new List<Block>();
+        private List<Block> Doors = new List<Block>();
+        private List<Block> DoorsHitboxes = new List<Block>();
+        private List<Flat> Floor = new List<Flat>();
+        Light light = new Light(new Vector3(10, 10, 10), false);
+
         private float speed = 1.4f;
         private double[] movingVector = new double[] { 0, 0 };
         private ViewPort Viewport { get; set; }
         private double deltaTime = 0.0;
         private Camera Camera { get; set; }
         private Map Map = new Map();
-        private Block Block;
 
         private Stopwatch stopwatch = new Stopwatch();
         private int frameCount = 0;
@@ -47,10 +52,9 @@ namespace ConsoleApp1
             }
             ;
             Camera = new Camera(Viewport);
-
-
             this.CursorState = CursorState.Grabbed;
-
+            this.WindowState = WindowState.Maximized;
+            MouseWheel += OnMouseWheel;
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -60,27 +64,18 @@ namespace ConsoleApp1
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-
-            CountFPS();
-
             float deltaTime = (float)args.Time;
             
-            this.MakeCurrent();
-
-            //Camera.SetProjection();
-            //Camera.SetView();
-
+            CountFPS();
+            MakeCurrent();
             GetMovingVector();
-
+            turnLight();
             MakeMove(deltaTime);
+            CheckDoors();
             IsExiting();
-
             GL.ClearColor(Color.Black);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);    
             DrawMap();
-
-            GL.PointSize(10);
             this.SwapBuffers();
         }
 
@@ -89,8 +84,6 @@ namespace ConsoleApp1
             base.OnResize(e);
             Viewport.Set();
         }
-
-
 
         protected override void OnLoad()
         {
@@ -102,9 +95,10 @@ namespace ConsoleApp1
             GL.DepthMask(true);
             GL.ClearDepth(1.0f);
             
-            stopwatch.Start();  
+            stopwatch.Start();
 
-            Map.map = Map.MapTranformation("map1.txt");
+            Map.map = Map.MapTranformation("Maps/map1.txt");
+            Camera.map = Map.map;
             GenerateMap(shader);
         }
 
@@ -113,14 +107,11 @@ namespace ConsoleApp1
             base.OnMouseMove(e);
 
             float sensitivity = 0.002f;
-
             float deltaX = e.Delta.X * sensitivity;
             float deltaY = e.Delta.Y * sensitivity;
 
             Camera.RotateY(deltaX);
             Camera.RotateX(deltaY);
-
-
         }
 
         private void IsExiting()
@@ -144,6 +135,22 @@ namespace ConsoleApp1
                 this.Title = $"FPS: {fps:F0}";
             }
         }
+        private void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            Camera.Zoom(-e.OffsetY / 5);
+        }
+
+        private void turnLight()
+        {
+            if(MouseState.IsButtonDown(MouseButton.Left))
+            {
+                light.lightOn = 1;
+            }
+            else if (MouseState.IsButtonDown(MouseButton.Right))
+            {
+                light.lightOn = 0;
+            }
+        }
 
         private void MakeMove(float deltaTime)
         {
@@ -151,13 +158,38 @@ namespace ConsoleApp1
             float dx = (float)(movingVector[0]);
             float dy = (float)(movingVector[1]);
 
-            if (KeyboardState.IsKeyDown(Keys.A)) {Camera.Move(movement * dx, 0, Walls);  }
-            if (KeyboardState.IsKeyDown(Keys.D)) {Camera.Move(movement * dx, 0, Walls); }
-            if (KeyboardState.IsKeyDown(Keys.W)) {Camera.Move(0, movement * dy, Walls);  }
-            if (KeyboardState.IsKeyDown(Keys.S)) {Camera.Move(0, movement * dy, Walls); }
+            if (KeyboardState.IsKeyDown(Keys.A)) {Camera.Move(movement * dx, 0, Walls, DoorsHitboxes);}
+            if (KeyboardState.IsKeyDown(Keys.D)) {Camera.Move(movement * dx, 0, Walls, DoorsHitboxes);}
+            if (KeyboardState.IsKeyDown(Keys.W)) { Camera.Move(0, movement * dy, Walls, DoorsHitboxes);}
+            if (KeyboardState.IsKeyDown(Keys.S)) {Camera.Move(0, movement * dy, Walls, DoorsHitboxes);}
         }
 
-        
+        private void CheckDoors()
+        {
+            float radius = 3f;
+          
+            for (int i = 0; i < Doors.Count; i++)
+            {
+                float distance = (float)Math.Sqrt((-Camera.x - Doors[i].position.X) * (-Camera.x - Doors[i].position.X) + (-Camera.z - Doors[i].position.Z) * (-Camera.z - Doors[i].position.Z));
+                if (distance < radius && KeyboardState.IsKeyDown(Keys.E))
+                {
+                    Doors[i].Changed = true;
+                    DoorsHitboxes.Remove(Doors[i]);
+                }
+            }
+            
+            for (int i = 0; i < Doors.Count; i++)
+            {
+                float distance = (float)Math.Sqrt((-Camera.x - Doors[i].position.X) * (-Camera.x - Doors[i].position.X) + (-Camera.z - Doors[i].position.Z) * (-Camera.z - Doors[i].position.Z));
+                if (distance < radius && distance > Math.Sqrt(2 * Math.Pow(Doors[i].TILE_SIZE / 2, 2)) && KeyboardState.IsKeyDown(Keys.Q) && Doors[i].Changed == true)
+                { 
+                    DoorsHitboxes.Insert(i, Doors[i]);
+                    Doors[i].Changed = false;
+                }
+            }
+        }
+
+
         private void GetMovingVector()
         {
             double x = 0;
@@ -169,6 +201,7 @@ namespace ConsoleApp1
             if (KeyboardState.IsKeyDown(Keys.S)) { y -= 1; }
 
             double length = Math.Sqrt(x * x + y * y);
+            
             if (length != 0)
             {
                 x /= length;
@@ -181,10 +214,24 @@ namespace ConsoleApp1
         public void DrawMap()
         {
             Walls.Sort((a, b) => (b.position.Z).CompareTo(a.position.Z));
+            DoorsHitboxes.Sort((a, b) => (b.position.Z).CompareTo(a.position.Z));
+            Floor.Sort((a, b) => (b.position.Z).CompareTo(a.position.Z));
 
             foreach (Block block in Walls)
             {
-                block.Draw(Camera);
+                block.Draw(Camera, light);
+            }
+            foreach (Block door in DoorsHitboxes)
+            {
+                door.Draw(Camera,light);
+            }
+            foreach (Flat flat in Floor)
+            {
+                flat.Draw(Camera, light);
+            }
+            foreach (ObjectC obj in Objects)
+            {
+                obj.Draw(Camera, light);
             }
         }
         public void GenerateMap(Shader shader)
@@ -196,19 +243,74 @@ namespace ConsoleApp1
                 for (int j = 0; j < Map.map[0].Length; j++)
                 {
                     int posX = (+1) * i * TILE_SIZE;
-                    int posZ = (+1) * j * TILE_SIZE;
+                    int posZ = (-1) * j * TILE_SIZE;
 
-                    if (Map.map[i][j] == 1 || Map.map[i][j] == 4)
+                    Floor.Add(MakeFlat(posX, posZ, shader));
+
+                    if (Map.map[i][j] == 1)
                     {
-                        Block block = new Block();
-                        block.position = new Vector3(posX, 0, posZ);
-                        block.Shader = shader;
-                        Walls.Add(block);
+                        Walls.Add(MakeBlock(posX, posZ, shader));
+                    }
+                    if (Map.map[i][j] == 2)
+                    {
+                        SetPlayer(posX, posZ, 0.7f);
+                    }
+                    if (Map.map[i][j] == 4)
+                    {
+                        Block doors = MakeDoors(posX, posZ, shader);
+                        Doors.Add(doors);
+                        DoorsHitboxes.Add(doors);
                     }
                 }
             }
         }
 
+        public void SetPlayer(int posX, int posZ, float height)
+        {
+            Camera.x = -posX;
+            Camera.y = -height;
+            Camera.z = -posZ;
+        }
+
+        public Flat MakeFlat(int posX, int posZ, Shader shader)
+        {
+            Flat flat = new Flat();
+            flat.position = new Vector3(posX, 0, posZ);
+            flat.Shader = shader;
+            flat.Material = new Material(new Vector3(0.5f, 0.01f, 0.01f), new Vector3(0.8f), 20.0f);
+            flat.countNormals();
+            return flat;
+        }
+
+        public Block MakeBlock(int posX, int posZ, Shader shader)
+        {
+            Block block = new Block();
+            block.position = new Vector3(posX, 0, posZ);
+            block.Shader = shader;
+            block.Material = new Material(new Vector3(0.5f, 0.01f, 0.01f), new Vector3(0.8f), 20.0f);
+            block.countNormals();
+            return block;
+        }
+
+        public Block MakeDoors(int posX, int posZ, Shader shader)
+        {
+            Block doors = new Block();
+            doors.position = new Vector3(posX, 0, posZ);
+            doors.Shader = shader;
+            doors.Material = new Material(new Vector3(0.4f, 0.4f, 0.4f), new Vector3(0.8f), 40.0f);
+            doors.countNormals();
+            return doors;
+        }
+
+        public ObjectC MakeObject(int posX, int posZ, Shader shader, string objFilename)
+        {
+            ObjectC obj = new ObjectC(objFilename);
+            obj.position = new Vector3(posX, 0, posZ);
+            obj.Shader = shader;
+            obj.Material = new Material(new Vector3(0.4f, 0.4f, 0.4f), new Vector3(0.8f), 40.0f);
+            Objects.Add(obj);
+            return obj;
+        }
 
         public static void Main()
         {
@@ -227,8 +329,5 @@ namespace ConsoleApp1
             var zpg = new MyGameWindow(gws, nws);
             zpg.Run();
         }
-
-
     }
-
 }

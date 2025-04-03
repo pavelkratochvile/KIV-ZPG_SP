@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Mathematics;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -14,12 +15,11 @@ namespace ConsoleApp1
         public Vector3 Position { get; set; }
 
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public Color Color { get; set; }
+        public Vector3 normal;
 
-        public Vertex(Vector3 position, Color color)
+        public Vertex(Vector3 position)
         {
             Position = position;
-            Color = color;
         }
 
         public override string ToString()

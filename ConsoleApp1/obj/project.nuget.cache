@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "k1NR3n6tHJw=",
+  "dgSpecHash": "RbPwScpwClA=",
   "success": true,
   "projectFilePath": "C:\\Users\\pavel\\OneDrive\\Dokumenty\\ZPG\\ZPG_SP\\Game\\ConsoleApp1\\ConsoleApp1.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\pavel\\.nuget\\packages\\freetypesharp\\3.0.0\\freetypesharp.3.0.0.nupkg.sha512",
     "C:\\Users\\pavel\\.nuget\\packages\\opentk\\4.9.3\\opentk.4.9.3.nupkg.sha512",
     "C:\\Users\\pavel\\.nuget\\packages\\opentk.audio.openal\\4.9.3\\opentk.audio.openal.4.9.3.nupkg.sha512",
     "C:\\Users\\pavel\\.nuget\\packages\\opentk.compute\\4.9.3\\opentk.compute.4.9.3.nupkg.sha512",

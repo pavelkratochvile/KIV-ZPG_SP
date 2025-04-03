@@ -3,7 +3,6 @@ using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,13 +14,12 @@ namespace ConsoleApp1.Cameras
         public ViewPort viewPort;
 
         private float zoom = 1f;
-        
-        public float x = -15f;
-        public float y = -0.7f;
-        public float z = -10f;
-        
-        bool isStuckX = false;
+        public int[][] map { get; set; }
 
+        public float x;
+        public float y;
+        public float z;
+ 
         public float rx;
         public float ry;
 
@@ -49,6 +47,10 @@ namespace ConsoleApp1.Cameras
                 return view;
             }
         }
+        public Vector3 GetPosition()
+        {
+            return new Vector3(x, y, z);
+        }
 
         public Camera(ViewPort viewPort)
         {
@@ -63,20 +65,22 @@ namespace ConsoleApp1.Cameras
             zoom = Math.Max(0.2f, Math.Min(2, zoom));
         }
 
-        public void Move(float x, float y, List<Block> Walls)
+        public void Move(float x, float y, List<Block> Walls, List<Block> Doors)
         {
             bool isMoveX = true;
             bool isMoveZ = true;
             
-            List<int> indices = GetCubesInRadius(Walls, 2.1f);
+            List<int> walls_indices = GetCubesInRadius(Walls, 2.1f);
+            List<int> doors_indices = GetCubesInRadius(Doors, 2.1f);
+
             float dx = (float)(x * Math.Cos(ry) + y * Math.Sin(ry));
             float dz = (float)(x * Math.Sin(ry) - y * Math.Cos(ry));
 
-            if(!IsMoveXok(Walls, indices, dx))
+            if (!IsMoveXok(Walls, walls_indices, dx) || !IsMoveXok(Doors, doors_indices,dx))
             {
                 isMoveX = false;
             }
-            if (!IsMoveZok(Walls, indices, dz))
+            if (!IsMoveZok(Walls, walls_indices, dz) || !IsMoveZok(Doors,doors_indices,dz))
             {
                 isMoveZ = false;
             }
@@ -100,6 +104,38 @@ namespace ConsoleApp1.Cameras
             }
 
         }
+        public Vector3 GetDirection()
+        {
+            float cosPitch = MathF.Cos(rx);
+            float sinPitch = MathF.Sin(rx);
+            float cosYaw = MathF.Cos(ry);
+            float sinYaw = MathF.Sin(ry);
+
+            Vector3 direction = new Vector3(
+                (cosPitch * sinYaw),
+                -sinPitch,
+                -cosPitch * cosYaw
+            );
+
+            direction.Normalize();
+            return direction;
+        }
+        
+        public Vector3 RotateAroundY(Vector3 vector, float angleDegrees)
+        {
+            float angleRadians = MathF.PI * angleDegrees / 180f;
+            float cos = MathF.Cos(angleRadians);
+            float sin = MathF.Sin(angleRadians);
+
+            Vector3 result = new Vector3
+            {
+                X = vector.X * cos + vector.Z * sin,
+                Y = vector.Y,
+                Z = -vector.X * sin + vector.Z * cos
+            };
+
+            return Vector3.Normalize(result);
+        }
 
         private bool IsMoveXok(List<Block> Walls, List<int> indices, float movex)
         {
@@ -117,11 +153,16 @@ namespace ConsoleApp1.Cameras
 
                 if (posz > min_z && posz < max_z)
                 {   
-                    if(posx + movex >= min_x && posx + movex <= max_x)
+                    if((posx + movex >= min_x && posx + movex <= max_x))
                     {
                         return false;
                     }
                 }
+                
+            }
+            if (IsOusideX(movex))
+            {
+                return false;
             }
             return true;
         }
@@ -147,30 +188,40 @@ namespace ConsoleApp1.Cameras
                     }
                 }
             }
-            return true;
-        }
-
-        private bool IsCubeFreeX(float dx, float max_x, float min_x)
-        {
-            float posx = -x - dx;
-            float posz = -z;
-            if (posx < max_x && posx > min_x)
+            if (IsOusideZ(movez))
             {
                 return false;
             }
             return true;
         }
 
-        private bool IsCubeFreeZ(float dz, float max_z, float min_z)
+        private bool IsOusideZ(float movez)
         {
-            float posx = -x;
-            float posz = -z - dz;
-            if (posz < max_z && posz > min_z)
+            if(-z + movez < -(map[0].Length * 2 - 1))
             {
-                return false;
+                return true;
+
             }
-            return true;
+            else if (-z + movez > 1)
+            {
+                return true;
+            }
+                return false;
         }
+        private bool IsOusideX(float movex)
+        {
+            if (-x + movex > map.Length * 2 - 1)
+            {
+                return true;
+
+            }
+            else if (-x + movex < -1)
+            {
+                return true;
+            }
+                return false;
+        }
+
         private int[] GetNormalVector(int cubeIndex, List<Block> Walls)
         {
             int[] vector = new int[2];
